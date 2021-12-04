@@ -1,0 +1,23 @@
+version: '3.1'
+services:
+  mjm:
+   build: ./monitorowanie-jednostek-morskichh
+   ports:
+    - "8080:8080"
+   depends_on:
+    - postgres
+   environment:
+    - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mjm
+    - SPRING_DATASOURCE_USERNAME=admin
+    - SPRING_DATASOURCE_PASSWORD=password
+    - SPRING_JPA_HIBERNATE_DDL_AUTO=create
+  postgres:
+   container_name: postgres
+   image: postgres
+   environment:
+     POSTGRES_PASSWORD: password
+     POSTGRES_USER: admin
+     POSTGRES_DB: mjm
+   ports:
+    - "5432:5432"
+

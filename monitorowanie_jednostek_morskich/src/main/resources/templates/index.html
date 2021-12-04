@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8">
+      <title>Monitorowanie jednostek morskich</title>
+      <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+      <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+      <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+      <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+         integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+         crossorigin=""/>
+      <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+         integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+         crossorigin=""></script>
+      <style>#map {height: 700px;width:100% }</style>
+   </head>
+   <body>
+      <div id="app">
+         <v-app>
+            <v-main>
+               <v-container>
+                  <h1>Monitorowanie jednostek morskich</h1>
+                  Ilość statków na terenie kontrolowanym:
+                  <h4 style ="color:red;display:inline">{{ships.length}}</h4>
+                  <div id="map"></div>
+                  <v-data-table
+                     dense
+                     :headers="headers"
+                     :items="ships"
+                     item-key="name"
+                     class="elevation-1"
+                     ></v-data-table>
+               </v-container>
+            </v-main>
+         </v-app>
+      </div>
+      
+      <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+      <script th:inline="javascript">
+      
+         new Vue({
+           el: '#app',
+           vuetify: new Vuetify(),
+           created () {
+           this.$vuetify.theme.dark = true
+          },
+          data() {
+                   return {
+                    ships: [[${ships}]],     
+                       headers: [
+                         {
+                           text: 'Mmsi',
+                           align: 'start',
+                           sortable: false,
+                           value: 'mmsi'
+                         },
+                         { text: 'Nazwa statku', value: 'name' },
+                         { text: 'Narodowość', value: 'country' }, 
+                         { text: 'Przeznaczenie port', value: 'destination' }, 
+                         { text: 'współrzędne X', value: 'currentPoint.x' },
+                         { text: 'współrzędne Y', value: 'currentPoint.y' } 
+                       ],             
+                   };
+                },
+                     })
+         
+         var map = L.map('map').setView([63.4989, 10.39094], 14);
+         
+         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+         }).addTo(map);
+         var bounds = [
+         	[63.3989,10.09094], [63.5989, 10.67047]
+         	];
+         L.control.scale().addTo(map)
+         L.rectangle(bounds, {color: "red", weight: 1}).addTo(map);
+         map.fitBounds(bounds);
+         
+         var ships = [[${ships}]];
+         
+         ships.forEach(value => {
+             var polyline;
+             var marker;
+            if(value.active == true){
+         	   marker = L.circleMarker([value.currentPoint.x, value.currentPoint.y], {
+             	   className: 'pulse'
+             	 }).addTo(map)
+             	         .bindPopup("<b>"+value.name+"<br></b>x: <b>"+value.currentPoint.x +"</b><br>y: <b>" + value.currentPoint.y + "</b>" );
+             	           
+            }else{
+         	   marker = L.circleMarker([value.currentPoint.x, value.currentPoint.y], {color: 'green'
+             	 }).addTo(map)
+             	         .bindPopup("<b>"+value.name+"<br></b>x: <b>"+value.currentPoint.x +"</b><br>y: <b>" + value.currentPoint.y + "</b>" );
+             	           
+            }
+            
+            var track = [];
+         value.track.forEach(t=>{
+         	track.push([t.x,t.y])
+         });
+         polyline = L.polyline(track, {color: 'red',opacity:0.2}).addTo(map);
+         
+            marker.on('mouseover', () => {
+         	   marker.openPopup();
+         	   polyline.setStyle({
+         		    color: 'red',opacity:1
+         		});
+            })
+             marker.on('click', () => {
+                 map.setView([value.currentPoint.x, value.currentPoint.y], 17);
+            })
+           marker.on('mouseout', () => {
+         	  marker.closePopup();
+         	  polyline.setStyle({
+             color: 'red',opacity:0.2
+         });
+            })
+         });
+      </script>
+      <style>
+         .pulse {
+         animation: pulsate 1s ease-out;
+         -webkit-animation: pulsate 1s ease-out;
+         -webkit-animation-iteration-count: infinite; 
+         opacity: 0.0
+         }
+         @keyframes pulsate {
+         0% {transform: opacity: 0.0;}
+         50% {opacity: 1.0;}
+         100% {transform: opacity: 0.0;}
+         }
+      </style>
+   </body>
+</html>
+
